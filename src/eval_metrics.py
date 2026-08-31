@@ -24,7 +24,7 @@ smoother = SmoothingFunction().method1
 rouge = rouge_scorer.RougeScorer(["rougeL"], use_stemmer=True)
 
 SEVERITY = {
-    "exact":                 7,
+    "exact":                 6,
     "equivalent":            6,
     "alternative_correct":   6,
     "overinclusive_valid":   5,
