@@ -11,63 +11,69 @@ dir(a → b) = P(entailment | a, b) + 0.3 · P(neutral | a, b)
 CAP        = 0.85 · dir(premise → hypothesis) + 0.15 · dir(hypothesis → premise)
 ```
 
-The weights, models and all other settings live in [`configs/default.yaml`](configs/default.yaml).
+## Using the metric
+
+```bash
+pip install -e .
+```
+
+```python
+from cap_eval import CAPScorer
+
+scorer = CAPScorer()  # cross-encoder/nli-deberta-v3-large, pinned revision
+scorer.score(
+    ["The powerhouse of the cell is the mitochondria."],   # premises (gold)
+    ["The mitochondria is the powerhouse of the cell."],   # hypotheses (candidate)
+)
+
+# Raw (question, gold answer, answer) triples need a trained statement model:
+scorer = CAPScorer(statement_model="outputs/statement_model/final")
+scorer.score_answers(["What is the powerhouse of the cell?"], ["mitochondria"], ["the mitochondrion"])
+```
+
+`score_detailed()` also returns both directional scores and all NLI probabilities.
 
 ## Repository structure
 
 ```
 .
-├── configs/default.yaml        # every setting for every step (seed, models + pinned revisions, weights, ...)
-├── data/
-│   ├── CAP-Correctness.csv     # 8,827 QA rows with correctness labels and premise/hypothesis statements
-│   └── CAP-Statements.csv      # 11,000 question/answer/statement examples for the statement model
 ├── src/cap_eval/
-│   ├── cli.py                  # `cap-eval` command line
-│   ├── config.py               # typed, strictly validated config
-│   ├── data.py                 # loading + validation, stable row ids
-│   ├── statements.py           # statement model: training and generation
-│   ├── cap.py                  # the CAP metric (NLI in both directions)
-│   ├── baselines.py            # BLEU, ROUGE-L, METEOR, BERTScore, COMET
-│   ├── stats.py                # correlation, pairwise ranking, AUC, bootstrap
-│   ├── evaluation.py           # benchmark tables
-│   └── reproducibility.py      # seeding, run manifests
-├── scripts/reproduce.sh        # end-to-end reproduction
-└── tests/
+│   ├── constants.py            # every default: models + pinned revisions, CAP weights, severity map, seed
+│   ├── scorer.py               # CAPScorer and StatementGenerator
+│   └── evaluation.py           # data loading, agreement statistics, benchmark tables, run manifests
+├── scripts/
+│   ├── evaluate_dataset.py     # score CAP-Correctness with CAP and benchmark it against the baselines
+│   ├── score_baselines.py      # BLEU, ROUGE-L, METEOR, BERTScore, COMET
+│   └── train_statement_model.py  # fine-tune the question + answer → statement model
+├── tests/
+│   ├── test_scorer.py
+│   └── test_evaluation.py
+├── data/
+│   ├── CAP-Correctness.csv     # 8,827 labeled QA rows with premise/hypothesis statements
+│   └── CAP-Statements.csv      # 11,000 question/answer/statement training examples
+├── pyproject.toml
+└── requirements.txt
 ```
-
-## Setup
-
-Python ≥ 3.10.
-
-```bash
-pip install -e ".[models,comet,dev]"
-```
-
-The extras are `models` (statement model, CAP, BLEU/ROUGE-L/METEOR/BERTScore), `comet` (kept separate because it pins its own torch/lightning versions) and `dev` (pytest). The core install is enough to run `cap-eval evaluate` on existing score files.
 
 ## Reproducing the results
 
-From the repository root:
-
 ```bash
-scripts/reproduce.sh
+pip install -r requirements.txt
+
+python scripts/score_baselines.py      # -> outputs/scores/<metric>.csv
+python scripts/evaluate_dataset.py     # -> outputs/scores/cap.csv, outputs/evaluation/
 ```
 
-This scores the released `CAP-Correctness.csv` with every metric and writes the benchmark to `outputs/evaluation/`. `scripts/reproduce.sh --full` also retrains the statement model and regenerates the premise/hypothesis statements first.
-
-The steps can also be run individually:
+This uses the released premise/hypothesis statements. To retrain the statement model and regenerate the statements first:
 
 ```bash
-cap-eval train-statements                                             # -> outputs/statement_model/final
-cap-eval generate-statements --model-dir outputs/statement_model/final  # -> outputs/statements.csv
-cap-eval score                                                        # -> outputs/scores/<metric>.csv
-cap-eval score --metrics cap bertscore                                # just some metrics
-cap-eval evaluate                                                     # -> outputs/evaluation/
+python scripts/train_statement_model.py                                          # -> outputs/statement_model/final
+python scripts/evaluate_dataset.py --statement-model outputs/statement_model/final
 ```
 
-Any config value can be overridden without editing the file, e.g. `cap-eval --set device=cuda --set cap.batch_size=64 score`. Overrides are recorded in the run manifest.
+Run each script with `--help` for its options, e.g. `--baselines` (compare against a subset, or none), `--device`, `--n-bootstrap`, `--reuse-cap-scores`.
 
-### Outputs of `evaluate`
+### Outputs in `outputs/evaluation/`
 
 | File | Contents |
 |---|---|
@@ -75,19 +81,18 @@ Any config value can be overridden without editing the file, e.g. `cap-eval --se
 | `correlations.csv` | Spearman ρ, Kendall τ-b and pairwise ranking accuracy per metric, with bootstrap CIs |
 | `descriptives.csv` | Per-label score distribution per metric |
 | `class_pairs.csv` | For every (better, worse) label pair: accuracy, AUC, violation rate, class means |
-| `hard_pairs.csv` | The subset of `class_pairs.csv` listed in `labels.hard_pairs` |
+| `hard_pairs.csv` | The subset of `class_pairs.csv` in `constants.HARD_PAIRS` |
 | `monotonicity.csv` | How many class pairs have their mean scores in the wrong order |
 | `paired_differences.csv` | Paired-bootstrap difference between CAP and each baseline |
 
-**Definitions.** Severity follows `labels.severity`. A pair of examples is comparable when their severities differ. *Pairwise accuracy* is the share of comparable pairs where the more-correct answer scores strictly higher (score ties count as not correct). *AUC* counts ties as half. Confidence intervals are percentile bootstrap intervals (10,000 resamples of rows). Every metric uses the same resamples, which is what makes the paired differences valid.
+**Definitions.** Severity follows `constants.SEVERITY`. A pair of examples is comparable when their severities differ. *Pairwise accuracy* is the share of comparable pairs where the more-correct answer scores strictly higher (score ties count as not correct). *AUC* counts ties as half. Confidence intervals are percentile bootstrap intervals over rows (10,000 resamples). Every metric uses the same resamples, which is what makes the paired differences valid.
 
 ## Reproducibility
 
-- **One config per run.** Every setting is in the YAML config, and unknown or missing keys are rejected.
-- **Pinned models.** The Hugging Face models are pinned to commit hashes (`revision`).
-- **Seeding.** Python, NumPy and PyTorch are seeded from `seed`, and so is the bootstrap. Set `statement_model.training.full_determinism: true` for deterministic CUDA kernels during training.
+- **Defaults in one place.** Every default is in [`constants.py`](src/cap_eval/constants.py). Hugging Face models are pinned to commit hashes.
+- **Seeding.** Python, NumPy, PyTorch and the bootstrap are seeded from `SEED`. `train_statement_model.py --full-determinism` also turns on deterministic CUDA kernels.
 - **Same rows for every metric.** Rows with a missing question, answer or statement are dropped once, when the data is loaded. `row_id` is the row's position in the original CSV and is used to join score files.
-- **Run manifests.** Every command writes a `*.manifest.json` next to its outputs. It records the resolved config, the command line, the git commit and whether the working tree was dirty, the SHA-256 of each input file, package versions and GPU. `evaluate` refuses to run on score files computed from a different input file.
+- **Run manifests.** Every output folder gets a `*.manifest.json`. It records the command line, the script settings, all constants, the SHA-256 of each input file, the git commit and whether the working tree was dirty, package versions and GPU. `evaluate_dataset.py` refuses baseline scores that were computed from a different data file.
 - **Recorded splits.** The statement model's train/validation/test assignment is saved to `splits.csv`.
 
 ## Data
@@ -101,6 +106,7 @@ See [`DATA_LICENSES.md`](DATA_LICENSES.md) for licensing and attribution of the 
 ## Tests
 
 ```bash
+pip install -e ".[dev]"
 pytest
 ```
 
