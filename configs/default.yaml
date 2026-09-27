@@ -1,0 +1,82 @@
+# Default configuration for the CAP pipeline.
+# Paths are relative to the repository root; run commands from there.
+# Override any value on the command line, e.g.  --set cap.batch_size=32
+
+seed: 42
+device: auto            # auto | cpu | cuda | mps
+output_dir: outputs
+
+data:
+  correctness_csv: data/CAP-Correctness.csv
+  statements_csv: data/CAP-Statements.csv
+  label_column: label_semantic
+
+labels:
+  # Ordinal severity used for all metrics (higher = more correct).
+  # Rank-based statistics only depend on the ordering and ties, not the values.
+  severity:
+    exact: 6
+    equivalent: 6
+    alternative_correct: 6
+    overinclusive_valid: 5
+    partial: 4
+    overinclusive_invalid: 3
+    invalid: 1
+    contradictory: 0
+  hard_pairs:              # [better, worse]
+    - [equivalent, partial]
+    - [overinclusive_valid, partial]
+    - [overinclusive_valid, overinclusive_invalid]
+    - [alternative_correct, invalid]
+
+statement_model:
+  base_model: google/mt5-small
+  revision: 73fb5dbe4756edadc8fbe8c769b0a109493acf7a   # pinned Hugging Face commit
+  input_template: "question: {question} answer: {answer}"
+  max_input_length: 512
+  max_target_length: 512
+  holdout_fraction: 0.2    # split evenly into validation and test
+  stratify_column: language
+  training:
+    num_train_epochs: 15
+    per_device_train_batch_size: 4
+    per_device_eval_batch_size: 4
+    gradient_accumulation_steps: 2
+    learning_rate: 5.0e-5
+    weight_decay: 0.01
+    warmup_ratio: 0.1
+    lr_scheduler_type: cosine
+    max_grad_norm: 1.0
+    early_stopping_patience: 8
+    metric_for_best_model: rougeL
+    save_total_limit: 2
+    logging_steps: 5
+    full_determinism: false  # true = deterministic CUDA kernels (slower)
+  generation:
+    # The released CAP-Correctness statements were generated with 128-token inputs.
+    max_input_length: 128
+    max_new_tokens: 512
+    num_beams: 4
+    batch_size: 16
+
+cap:
+  nli_model: cross-encoder/nli-deberta-v3-large
+  revision: bab4bc7178836f731dcfd18c06ca9def0a137712   # pinned Hugging Face commit
+  batch_size: 16
+  max_length: 512
+  fp16: true               # only used on CUDA
+  neutral_weight: 0.3      # directional score = P(entail) + w * P(neutral)
+  forward_weight: 0.85     # CAP = a * dir(premise->hyp) + (1 - a) * dir(hyp->premise)
+
+baselines:
+  bertscore_model: roberta-large
+  bertscore_batch_size: 64
+  comet_model: Unbabel/wmt22-comet-da
+  comet_batch_size: 32
+  comet_gpus: 0
+
+evaluation:
+  metrics: [cap, bleu, rouge_l, meteor, bertscore, comet]
+  reference_metric: cap    # paired bootstrap differences are reported against this metric
+  n_bootstrap: 10000
+  ci_level: 0.95
