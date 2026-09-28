@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How Correct Is Your Answer? — CAP</title>
+<meta name="description" content="Interactive companion to the CAP paper: an eight-class correctness taxonomy for open QA, the CAP-Correctness benchmark, the CAP metric, and an evaluator leaderboard.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234d7ea8'/%3E%3Cpath d='M9 17l5 5 9-11' stroke='white' stroke-width='3.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="stylesheet" href="css/style.css">
+<script src="js/theme.js"></script>
+</head>
+<body>
+
+<header class="site-nav">
+  <a class="brand" href="#top"><span class="dot"></span> CAP</a>
+  <nav aria-label="Sections">
+    <a href="#taxonomy">Taxonomy</a>
+    <a href="#method">Method</a>
+    <a href="#results">Results</a>
+    <a href="#llms">LLM answers</a>
+    <a href="#leaderboard">Leaderboard</a>
+    <a href="#evaluate">Evaluate yours</a>
+    <a href="#explore">Dataset</a>
+    <a href="#contact">Contact</a>
+    <a href="#cite">Cite</a>
+  </nav>
+  <button class="theme-toggle" type="button" aria-label="Switch theme"><span class="sun">☀</span><span class="moon">☾</span></button>
+</header>
+
+<section class="hero art-hero art-cap" id="top">
+  <svg id="hero-art" class="hero-art" viewBox="0 0 1200 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+  <div class="wrap">
+    <p class="eyebrow">Open QA evaluation · arXiv 2609.01369</p>
+    <h1>How Correct Is Your Answer?</h1>
+    <p class="subtitle">A Semantic Correctness Framework for Open QA Evaluation</p>
+    <p class="authors" id="authors"></p>
+    <p class="affils" id="affiliations"></p>
+    <div class="link-row">
+      <a class="pill-btn primary" href="https://arxiv.org/abs/2609.01369">Paper</a>
+      <a class="pill-btn" href="https://arxiv.org/pdf/2609.01369">PDF</a>
+      <a class="pill-btn" href="https://github.com/ElitsaY/Correctness_eval">Code</a>
+      <a class="pill-btn" href="https://github.com/ElitsaY/Correctness_eval/tree/main/data">Data</a>
+    </div>
+    <div class="badges">
+      <span class="badge ids">8-class taxonomy</span>
+      <span class="badge bfs">CAP-Correctness · 8.8k</span>
+      <span class="badge dfs">CAP metric</span>
+      <span class="badge ucs">Evaluator leaderboard</span>
+    </div>
+    <figure class="fig1">
+      <img src="assets/figure1.png" width="694" height="522" alt="Figure 1. Question: At what temperature does water boil? Gold: Water boils at 100 degrees Celsius. A contradictory answer, 'Water boils at 0 degrees Celsius', gets BERTScore 0.99 and COMET 0.99 but CAP 0.01. An equivalent answer, 'The boiling point of water is one hundred degrees Celsius', gets BERTScore 0.90, COMET 0.87 and CAP 0.99.">
+      <figcaption>Figure 1. Similarity metrics reward the contradiction and penalise the paraphrase; CAP scores both correctly.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<div class="wrap">
+
+  <!-- ===== OVERVIEW ===== -->
+  <section class="block" id="overview">
+    <h2 class="section-title">Overview</h2>
+    <ol class="concept-list">
+      <li><a href="#taxonomy"><b>An eight-class taxonomy</b></a>: answers are ordered by how they relate to the gold answer, not judged right or wrong.</li>
+      <li><a href="#method"><b>CAP</b></a>: a reference-based metric that compares question-conditioned statements with bidirectional NLI.</li>
+      <li><a href="#results"><b>Results</b></a>: does each metric keep the taxonomy's order? Rank correlation, class distributions and hard pairs.</li>
+      <li><a href="#llms"><b>LLM answers</b></a>: CAP on human-labeled answers from GPT-4o, Gemini 2.0 Flash and Qwen3-8B.</li>
+      <li><a href="#leaderboard"><b>Leaderboard</b></a> and <a href="#evaluate"><b>evaluate yours</b></a>: rank your own evaluator on the test split in the browser.</li>
+      <li><a href="#explore"><b>Dataset</b></a>: browse all 8,827 CAP-Correctness examples with every metric's score.</li>
+    </ol>
+    <details class="table-view" style="margin-top:1.4rem;">
+      <summary>Read the abstract</summary>
+      <p class="section-lede" style="margin-top:0.8rem;">Reliable evaluation of open-ended question answering remains a bottleneck for measuring answer correctness of modern LLMs. Unlike multiple-choice tasks, free-form answers may be correct in many surface forms and may fail in qualitatively different ways, including incompleteness, contradiction, overgeneration, and endorsement of false premises. Existing judgment-based and similarity-based metrics often collapse these distinctions. We address this gap with three reusable contributions. First, we introduce a semantic correctness taxonomy that assigns open-ended answers to eight ordered classes, separating verbose-but-correct answers from those contaminated by hallucinated content. Second, we release CAP-Correctness, an 8.8k-example benchmark spanning widely used QA datasets, and CAP-Statements, an 11k-example dataset for converting question-answer pairs into declarative statements for natural language inference (NLI) training and statement-based evaluation. Third, we introduce CAP (Context-Aware Precision), a reference-based metric that scores question-conditioned statements using bidirectional NLI. Under a monotonicity protocol testing whether metrics respect the taxonomy's intended ordering, CAP outperforms established baselines.</p>
+    </details>
+  </section>
+
+  <!-- ===== TAXONOMY ===== -->
+  <section class="block algo-section ids" id="taxonomy">
+    <span class="badge ids section-badge">Taxonomy</span>
+    <h2 class="section-title">An eight-class correctness taxonomy</h2>
+    <p class="section-lede">Each answer gets one of eight classes by how it relates to the gold answer under the same question. A good metric should score them in this order.</p>
+    <div class="definition-box">
+      <div class="dbox-label">📐 Monotonicity target (Eq. 1)</div>
+      <div class="ordering" id="ordering"></div>
+    </div>
+    <ul class="concept-list">
+      <li><b>Separates verbose answers</b>: <i>overinclusive-valid</i> adds correct extra information, <i>overinclusive-invalid</i> adds hallucinated information.</li>
+      <li><b>Separates failure modes</b>: incomplete (<i>partial</i>), wrong (<i>invalid</i>) and <i>contradictory</i> answers.</li>
+    </ul>
+    <h3 class="section-title">The classes, with examples from CAP-Correctness</h3>
+    <div class="tax-grid" id="taxonomy-cards"></div>
+  </section>
+
+  <!-- ===== METHOD ===== -->
+  <section class="block algo-section bfs" id="method">
+    <span class="badge bfs section-badge">Method</span>
+    <h2 class="section-title">How CAP works</h2>
+    <p class="section-lede">CAP turns the question with each answer into a declarative statement, then asks an NLI model whether the two statements entail each other, in both directions.</p>
+    <div class="playground">
+      <svg class="pipeline" viewBox="0 0 760 250" role="img" aria-labelledby="pipeline-title">
+        <title id="pipeline-title">CAP pipeline. The question with the gold answer and the question with the predicted answer each go through mT5-small, which produces a gold statement and an answer statement. An NLI model scores both directions: gold to answer with weight alpha, answer to gold with weight one minus alpha.</title>
+        <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrow-head" d="M0,0L10,5L0,10z"/></marker></defs>
+        <rect class="box soft" x="10" y="30" width="170" height="56" rx="12"/><text class="t" x="95" y="54">question + gold</text><text class="s" x="95" y="73">q, g</text>
+        <rect class="box soft" x="10" y="160" width="170" height="56" rx="12"/><text class="t" x="95" y="184">question + answer</text><text class="s" x="95" y="203">q, p</text>
+        <rect class="box model" x="232" y="90" width="120" height="66" rx="12"/><text class="t" x="292" y="118">mT5-small</text><text class="s" x="292" y="138">QA → statement</text>
+        <rect class="box soft" x="404" y="30" width="150" height="56" rx="12"/><text class="t" x="479" y="54">gold statement</text><text class="s" x="479" y="73">s(q, g)</text>
+        <rect class="box soft" x="404" y="160" width="150" height="56" rx="12"/><text class="t" x="479" y="184">answer statement</text><text class="s" x="479" y="203">s(q, p)</text>
+        <rect class="box nli" x="606" y="90" width="144" height="66" rx="12"/><text class="t" x="678" y="118">NLI, both ways</text><text class="s" x="678" y="138">DeBERTa-v3-large</text>
+        <g marker-end="url(#arrow)">
+          <path class="arrow" d="M180,58 C210,58 210,110 230,112"/>
+          <path class="arrow" d="M180,188 C210,188 210,136 230,134"/>
+          <path class="arrow" d="M352,112 C380,110 380,58 402,58"/>
+          <path class="arrow" d="M352,134 C380,136 380,188 402,188"/>
+          <path class="arrow" d="M554,58 C580,58 585,110 604,112"/>
+          <path class="arrow" d="M554,188 C580,188 585,136 604,134"/>
+        </g>
+        <text class="w" x="578" y="42">g → p · weight α</text>
+        <text class="w" x="578" y="234">p → g · weight 1 − α</text>
+      </svg>
+    </div>
+    <div class="definition-box">
+      <div class="dbox-label">📐 CAP (Eqs. 2–3)</div>
+      <div class="math-block">\[ \mathbf{D}(s_a \to s_b) = P_{\text{entail}}(s_a \to s_b) + \lambda\, P_{\text{neutral}}(s_a \to s_b) \]</div>
+      <div class="math-block">\[ \text{CAP} = \alpha\, \mathbf{D}(s_g \to s_p) + (1-\alpha)\, \mathbf{D}(s_p \to s_g), \qquad \alpha = 0.85,\ \lambda = 0.3 \]</div>
+      <p>A convex combination of two scores in [0, 1], so CAP always lies in [0, 1].</p>
+    </div>
+    <h3 class="section-title">The statement model</h3>
+    <p class="section-lede">mT5-small fine-tuned on the 8,800 training examples of CAP-Statements.</p>
+    <div class="stat-strip">
+      <div class="stat"><span class="n">96.64</span><span class="l">BLEU</span><span class="d">held-out test</span></div>
+      <div class="stat"><span class="n">98.08</span><span class="l">ROUGE-L</span><span class="d">held-out test</span></div>
+      <div class="stat"><span class="n">76.7%</span><span class="l">Exact match</span><span class="d">held-out test</span></div>
+      <div class="stat"><span class="n">90.0%</span><span class="l">Fully correct</span><span class="d">1,353 human-checked</span></div>
+    </div>
+  </section>
+
+  <!-- ===== RESULTS ===== -->
+  <section class="block algo-section dfs" id="results">
+    <span class="badge dfs section-badge">Results</span>
+    <h2 class="section-title">Does each metric keep the classes in order?</h2>
+    <p class="section-lede">On the 7,827-example test split, CAP's rank correlation with the taxonomy is more than twice that of the strongest baseline. Values are recomputed from the released per-example scores; COMET is shown as reported in the paper.</p>
+
+    <h4 class="try">Agreement with the taxonomy ordering</h4>
+    <div class="playground">
+      <div class="pg-controls">
+        <div class="strategy-pick" id="stat-toggle" role="group" aria-label="Statistic">
+          <button type="button" class="strat-btn active" data-stat="spearman">Spearman ρ</button>
+          <button type="button" class="strat-btn" data-stat="kendall">Kendall τ</button>
+          <button type="button" class="strat-btn" data-stat="pairwise_accuracy">Pairwise accuracy</button>
+        </div>
+      </div>
+      <div class="chart" id="headline-chart"></div>
+      <p class="fig-note" id="headline-note"></p>
+      <details class="table-view"><summary>Table view (Tables 2, 13, 14)</summary><div class="table-wrap" id="headline-table"></div></details>
+    </div>
+
+    <h4 class="try">See it per class: score distributions</h4>
+    <p class="section-lede">Most correct class at the top. Box: middle 50%; line: middle 90%; bar: median; ring: mean. A metric that respects the taxonomy moves steadily left going down.</p>
+    <div class="playground">
+      <div class="pg-controls">
+        <span class="ctrl-label">Metric</span>
+        <div class="strategy-pick" id="dist-metric" role="group" aria-label="Metric"></div>
+      </div>
+      <div class="chart" id="dist-chart"></div>
+      <p class="fig-note" id="dist-violations"></p>
+      <details class="table-view"><summary>Table view</summary><div class="table-wrap" id="dist-table"></div></details>
+    </div>
+
+    <h3 class="section-title">Hard neighbouring pairs (Table 4)</h3>
+    <p class="section-lede">Share of answer pairs where the more correct class scores strictly higher; 50 is chance. Blue cells beat chance, red cells fall below it.</p>
+    <div class="table-wrap" id="hard-table"></div>
+    <div class="legend" id="hard-legend" style="margin-top:0.6rem;"></div>
+
+    <h3 class="section-title">Every class against every other</h3>
+    <p class="section-lede">AUC for each (more correct, less correct) class pair: 1 is perfect separation, 0.5 is chance.</p>
+    <div class="pg-controls">
+      <span class="ctrl-label">Metric</span>
+      <div class="strategy-pick" id="auc-metric" role="group" aria-label="Metric"></div>
+    </div>
+    <div class="table-wrap" id="auc-table"></div>
+  </section>
+
+  <!-- ===== LLM ANSWERS ===== -->
+  <section class="block algo-section ucs" id="llms">
+    <span class="badge ucs section-badge">Generalization</span>
+    <h2 class="section-title">On real LLM answers</h2>
+    <p class="section-lede">Zero-shot answers from three LLMs to 1,000 CAP-Correctness questions, labeled by human annotators (Tables 5 and 6). Mean CAP per class largely follows the taxonomy for all three models.</p>
+    <div class="playground">
+      <div class="legend" id="llm-legend"></div>
+      <div class="chart" id="llm-chart"></div>
+      <p class="fig-note" id="llm-note"></p>
+      <details class="table-view"><summary>Table view</summary><div class="table-wrap" id="llm-table"></div></details>
+    </div>
+    <h3 class="section-title">Synthetic vs. human labels</h3>
+    <p class="section-lede">On the 1,638 human-validated examples, CAP agrees slightly <b>more</b> with the human labels (Spearman 69.89) than with the synthetic ones (66.87), so its performance is not an artifact of the labeling pipeline (Tables 16 and 17).</p>
+    <div class="playground">
+      <div class="legend" id="human-legend"></div>
+      <div class="chart" id="human-chart"></div>
+    </div>
+  </section>
+
+  <!-- ===== LEADERBOARD ===== -->
+  <section class="block algo-section ids" id="leaderboard">
+    <span class="badge ids section-badge">Leaderboard</span>
+    <h2 class="section-title">Evaluator leaderboard</h2>
+    <p class="section-lede">How well each evaluator's scores follow the taxonomy on the CAP-Correctness test split, ranked by Spearman ρ. An evaluator you test below joins the table in your browser.</p>
+    <div class="table-wrap" id="lb-table"></div>
+    <p class="fig-note" id="lb-note"></p>
+  </section>
+
+  <!-- ===== EVALUATE YOURS ===== -->
+  <section class="block" id="evaluate">
+    <h2 class="section-title">Evaluate your evaluator</h2>
+    <p class="section-lede">Score the test questions with your own metric and see where it ranks. Everything runs in your browser; nothing is uploaded.</p>
+    <div class="grid-2">
+      <div class="card step">
+        <h4><span class="step-no">1</span>Get the test set</h4>
+        <p>A CSV with <code>row_id, question, gold_answer, answer</code> for the 7,826 test examples that have a candidate answer.</p>
+        <button class="pill-btn" type="button" id="download-template">Download test set CSV</button>
+        <h4 style="margin-top:1.2rem;"><span class="step-no">2</span>Score every row</h4>
+        <p>Higher = more correct. Any scale works: only the ordering matters.</p>
+      </div>
+      <div class="card step">
+        <h4><span class="step-no">3</span>Load your scores</h4>
+        <p>A CSV with columns <code>row_id,score</code>: upload a file or paste the text.</p>
+        <div class="pg-controls" style="margin-bottom:0.7rem;">
+          <label class="field"><span class="ctrl-label">Evaluator name</span><input type="text" id="yours-name" value="My evaluator" maxlength="60"></label>
+          <label class="field"><span class="ctrl-label">File</span><input type="file" id="yours-file" accept=".csv,text/csv"></label>
+        </div>
+        <textarea id="yours-text" placeholder="row_id,score&#10;0,0.93&#10;1,0.12&#10;…" aria-label="Paste scores CSV"></textarea>
+        <div class="link-row" style="justify-content:flex-start; margin:0.8rem 0 0;">
+          <button class="pill-btn primary" type="button" id="yours-run">Evaluate</button>
+          <button class="pill-btn" type="button" id="yours-demo">Try with BLEU's scores</button>
+        </div>
+      </div>
+    </div>
+    <div id="yours-result" hidden>
+      <div class="notice" id="yours-status" role="status"></div>
+      <div class="stat-strip" id="yours-tiles"></div>
+      <h4 class="try">Class means: yours vs. CAP</h4>
+      <div class="playground">
+        <div class="legend" id="yours-legend"></div>
+        <div class="chart" id="yours-chart"></div>
+        <p class="fig-note">Scores are rank-normalised to [0, 1] within each evaluator, so different scales can be compared.</p>
+      </div>
+      <div class="link-row" style="justify-content:flex-start;">
+        <button class="pill-btn" type="button" id="yours-download">Download results (JSON)</button>
+        <a class="pill-btn" href="#contact">Tell us about your evaluator</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== DATASET ===== -->
+  <section class="block" id="explore">
+    <h2 class="section-title">Browse CAP-Correctness</h2>
+    <p class="section-lede">All 8,827 examples with their class. Click a row for the generated statements.</p>
+    <div class="pg-controls">
+      <label class="field"><span class="ctrl-label">Search</span><input type="search" id="ex-search" placeholder="question or answer text"></label>
+      <label class="field"><span class="ctrl-label">Class</span><select id="ex-label"><option value="">All classes</option></select></label>
+      <label class="field"><span class="ctrl-label">Source</span><select id="ex-dataset"><option value="">All sources</option></select></label>
+      <label class="field"><span class="ctrl-label">Split</span><select id="ex-split"><option value="">All</option><option value="test">Test</option><option value="validation">Validation</option></select></label>
+    </div>
+    <div class="table-wrap" id="ex-table"><p class="muted" style="padding:1rem">Loading examples…</p></div>
+    <div class="pager" id="ex-pager"></div>
+  </section>
+
+  <!-- ===== USE CAP ===== -->
+  <section class="block" id="use">
+    <h2 class="section-title">Use CAP on your data</h2>
+    <p class="section-lede">An online scorer is coming soon. Until then, CAP runs locally with the Python package.</p>
+    <div class="code-card">
+      <div class="code-head"><span class="code-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="code-file">score_with_cap.py</span><span class="code-lang">Python</span><button type="button" class="code-copy" data-copy="usage-code">Copy</button></div>
+<pre class="code-body" id="usage-code"><span class="c"># pip install git+https://github.com/ElitsaY/Correctness_eval.git</span>
+<span class="k">from</span> cap_eval <span class="k">import</span> CAPScorer
+
+<span class="c"># Statement pairs: (gold statement, answer statement)</span>
+scorer = CAPScorer()
+scorer.score([<span class="s">"Water boils at 100 degrees Celsius."</span>],
+             [<span class="s">"The boiling point of water is one hundred degrees Celsius."</span>])
+
+<span class="c"># Raw (question, gold, answer) triples, with the statement model</span>
+scorer = CAPScorer(statement_model=<span class="s">"path/to/mt5-qa-statement"</span>)
+scorer.score_answers([<span class="s">"At what temperature does water boil?"</span>],
+                     [<span class="s">"100 degrees Celsius"</span>], [<span class="s">"one hundred degrees Celsius"</span>])</pre>
+    </div>
+  </section>
+
+  <!-- ===== CONTACT ===== -->
+  <!-- Paste the Google Form's share link (…/viewform) into data-form-url to show the form. -->
+  <section class="block algo-section teal-top" id="contact" data-form-url="">
+    <span class="badge bfs section-badge">Contact</span>
+    <h2 class="section-title">Get in touch</h2>
+    <p class="section-lede">We'd like to hear from you. Write to the authors if you have:</p>
+    <ul class="concept-list">
+      <li><b>An idea for this page</b>: a visualization, an analysis or a feature that would make it more useful.</li>
+      <li><b>Your own evaluator</b>: a metric you'd like to see on the leaderboard, ideally with a link to its paper or code.</li>
+      <li><b>A question or a correction</b> about the paper, the data or the code.</li>
+    </ul>
+    <div id="contact-form" class="contact-form"></div>
+  </section>
+
+  <!-- ===== SUMMARY ===== -->
+  <section class="block" id="summary">
+    <h2 class="section-title">Summary: key takeaways</h2>
+    <ol class="concept-list">
+      <li><b>Correctness is ordinal, not binary</b>: eight classes separate paraphrases, verbose answers, partial answers and contradictions.</li>
+      <li><b>Similarity metrics miss the order</b>: BLEU, ROUGE-L, METEOR and BERTScore stay near chance in pairwise accuracy and put about half of the class pairs out of order.</li>
+      <li><b>CAP follows the taxonomy</b>: Spearman 60.4 vs. 26.9 for the best baseline, with 4 of 25 class pairs out of order.</li>
+      <li><b>Known failure modes</b>: <i>partial</i> answers score too high and <i>alternative-correct</i> answers too low, both artefacts of whole-statement NLI.</li>
+    </ol>
+  </section>
+
+  <!-- ===== CITE ===== -->
+  <section class="block" id="cite">
+    <h2 class="section-title">Citation</h2>
+    <div class="code-card">
+      <div class="code-head"><span class="code-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="code-file">citation.bib</span><span class="code-lang">BibTeX</span><button type="button" class="code-copy" data-copy="bibtex">Copy</button></div>
+<pre class="code-body" id="bibtex">@misc{yotkova2026correct,
+  title         = {How Correct Is Your Answer? A Semantic Correctness Framework for Open QA Evaluation},
+  author        = {Yotkova, Elitsa and Kastreva, Violeta and Velkov, Petar and Boyanov, Hristo and Dimitrov, Dimitar and Nakov, Preslav and Koychev, Ivan},
+  year          = {2026},
+  eprint        = {2609.01369},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CL}
+}</pre>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  Code: MIT License · Data: <a href="https://github.com/ElitsaY/Correctness_eval/blob/main/DATA_LICENSES.md">DATA_LICENSES.md</a> (ARC, OpenBookQA, MMLU attribution)<span id="provenance"></span>
+</footer>
+
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '\\[', right: '\\]', display: true}, {left: '\\(', right: '\\)', display: false}]})"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

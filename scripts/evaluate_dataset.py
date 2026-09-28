@@ -11,7 +11,7 @@ released statements in the data file are used.
 Outputs (under --output-dir):
     scores/cap.csv            CAP score and NLI probabilities per row
     statements.csv            regenerated statements (only with --statement-model)
-    evaluation/               benchmark tables and summary.md
+    evaluation/<split>/       benchmark tables and summary.md (default split: test)
 Each output folder gets a *.manifest.json describing how it was produced.
 """
 
@@ -44,6 +44,10 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--data", type=Path, default=Path("data/CAP-Correctness.csv"))
     parser.add_argument("--output-dir", type=Path, default=Path("outputs"))
+    parser.add_argument("--split", choices=["test", "validation", "all"], default="test",
+                        help="rows to evaluate on; the paper reports the test split (default)")
+    parser.add_argument("--splits-file", type=Path, default=Path("data/CAP-Correctness-splits.csv"),
+                        help="row_id,split assignment of the data file")
     parser.add_argument("--baselines", nargs="*", choices=C.BASELINE_METRICS,
                         default=list(C.BASELINE_METRICS),
                         help="baseline metrics to compare against (default: all)")
@@ -84,17 +88,27 @@ def main() -> None:
         if df[metric].isna().any():
             raise ValueError(f"{metric} scores are missing for some rows; re-run score_baselines.py")
 
+    inputs = {"data": args.data}
+    if args.split != "all":
+        splits = pd.read_csv(args.splits_file, usecols=[ROW_ID, "split"])
+        df = df.merge(splits, on=ROW_ID, how="left", validate="one_to_one")
+        if df["split"].isna().any():
+            raise ValueError(f"{args.splits_file} has no split for some rows of {args.data}")
+        df = df[df["split"] == args.split].reset_index(drop=True)
+        inputs["splits"] = args.splits_file
+        logger.info("Evaluating on the %s split (%d rows)", args.split, len(df))
+
     metrics = ["cap", *args.baselines]
     result = evaluate(
         df, metrics, reference_metric="cap", n_bootstrap=args.n_bootstrap, seed=args.seed
     )
-    eval_dir = args.output_dir / "evaluation"
+    eval_dir = args.output_dir / "evaluation" / args.split
     summary = write_tables(result, eval_dir)
     write_manifest(
         eval_dir / "evaluate.manifest.json",
         settings=settings,
-        inputs={"data": args.data} | {f"scores_{m}": scores_dir / f"{m}.csv" for m in metrics},
-        extra={"rows": len(df), "metrics": metrics},
+        inputs=inputs | {f"scores_{m}": scores_dir / f"{m}.csv" for m in metrics},
+        extra={"rows": len(df), "metrics": metrics, "split": args.split},
     )
     print(summary.read_text(encoding="utf-8"))
 

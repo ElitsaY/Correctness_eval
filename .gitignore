@@ -7,3 +7,4 @@ venv/
 *.egg-info/
 outputs/
 .pytest_cache/
+models/

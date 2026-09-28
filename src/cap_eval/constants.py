@@ -39,7 +39,7 @@ SEVERITY = {
     "alternative_correct": 6,
     "overinclusive_valid": 5,
     "partial": 4,
-    "overinclusive_invalid": 3,
+    "overinclusive_invalid": 2,
     "invalid": 1,
     "contradictory": 0,
 }
@@ -53,5 +53,8 @@ HARD_PAIRS = (
 
 # --- Evaluation -----------------------------------------------------------------
 N_BOOTSTRAP = 10_000
+# Scores are rounded to this many decimals before comparison, so values that differ
+# only by floating-point noise (e.g. 0.5 vs 0.49999999999999994) count as ties.
+SCORE_DECIMALS = 10
 CI_LEVEL = 0.95
 BASELINE_METRICS = ("bleu", "rouge_l", "meteor", "bertscore", "comet")

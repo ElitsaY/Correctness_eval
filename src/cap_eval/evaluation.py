@@ -224,12 +224,18 @@ def evaluate(
 ) -> EvaluationResult:
     """Benchmark each metric column of ``df`` against its ``label``/``severity``.
 
+    Scores are rounded to ``constants.SCORE_DECIMALS`` so floating-point noise
+    cannot turn ties into wins or losses.
+
     All metrics share the same rows and the same bootstrap resamples, so
     ``paired_differences`` compares ``reference_metric`` to every other metric.
     """
+    score_arrays = {}
     for metric in metrics:
-        if not np.isfinite(df[metric].to_numpy(dtype=float)).all():
+        values = df[metric].to_numpy(dtype=float)
+        if not np.isfinite(values).all():
             raise ValueError(f"Metric {metric!r} has missing or non-finite scores")
+        score_arrays[metric] = np.round(values, C.SCORE_DECIMALS)
     hard_pairs = {tuple(p) for p in hard_pairs}
     for better, worse in hard_pairs:
         if severity[better] <= severity[worse]:
@@ -259,7 +265,7 @@ def evaluate(
     replicates = {}
     rows: dict[str, list[dict]] = {"correlations": [], "descriptives": [], "class_pairs": []}
     for metric in metrics:
-        scores = df[metric].to_numpy(dtype=float)
+        scores = score_arrays[metric]
         boot = bootstrap(
             lambda idx: stats_for(scores, idx),
             n=len(scores),

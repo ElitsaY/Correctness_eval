@@ -75,7 +75,7 @@ class CAPScorer:
         dtype = torch.float16 if (fp16 and self.device == "cuda") else torch.float32
         self.tokenizer = AutoTokenizer.from_pretrained(model, revision=revision)
         self.model = AutoModelForSequenceClassification.from_pretrained(
-            model, revision=revision, torch_dtype=dtype
+            model, revision=revision, dtype=dtype
         ).to(self.device)
         self.model.eval()
         self.class_ids = resolve_class_ids(self.model.config.id2label)

@@ -1,0 +1,115 @@
+{
+  "title": "How Correct Is Your Answer? A Semantic Correctness Framework for Open QA Evaluation",
+  "arxiv": "2609.01369",
+  "authors": [
+    {"name": "Elitsa Yotkova", "affiliations": [1], "equal": true},
+    {"name": "Violeta Kastreva", "affiliations": [1, 2], "equal": true},
+    {"name": "Petar Velkov", "affiliations": [1, 3]},
+    {"name": "Hristo Boyanov", "affiliations": [1]},
+    {"name": "Dimitar Dimitrov", "affiliations": [1]},
+    {"name": "Preslav Nakov", "affiliations": [4]},
+    {"name": "Ivan Koychev", "affiliations": [1]}
+  ],
+  "affiliations": [
+    "Sofia University “St. Kliment Ohridski”",
+    "ETH Zürich",
+    "University of Zurich",
+    "Mohamed bin Zayed University of Artificial Intelligence"
+  ],
+  "label_definitions": {
+    "exact": "Semantically identical to the gold answer.",
+    "equivalent": "Same meaning expressed through linguistic variation or paraphrasing.",
+    "alternative_correct": "Different but still semantically correct answer.",
+    "overinclusive_valid": "Correct answer with additional valid information.",
+    "partial": "Contains only part of the required information.",
+    "overinclusive_invalid": "Correct answer with additional incorrect or unsupported information.",
+    "invalid": "Semantically incorrect answer.",
+    "contradictory": "Explicitly contradicts the gold answer or question premise."
+  },
+  "table2": {
+    "caption": "Correlation and pairwise ranking accuracy (×100) with 95% bootstrap CIs, test split (Tables 2 and 13).",
+    "rows": [
+      {"metric": "bleu", "spearman": 10.95, "spearman_ci": [8.55, 13.25], "kendall": 8.31, "kendall_ci": [6.41, 10.12], "pairwise_accuracy": 51.57, "violations": 14},
+      {"metric": "rouge_l", "spearman": 16.67, "spearman_ci": [14.29, 19.08], "kendall": 13.00, "kendall_ci": [11.04, 14.95], "pairwise_accuracy": 55.35, "violations": 12},
+      {"metric": "meteor", "spearman": 14.70, "spearman_ci": [12.41, 17.01], "kendall": 11.45, "kendall_ci": [9.62, 13.27], "pairwise_accuracy": 53.71, "violations": 12},
+      {"metric": "bertscore", "spearman": 16.10, "spearman_ci": [13.82, 18.39], "kendall": 10.90, "kendall_ci": [9.22, 12.63], "pairwise_accuracy": 56.18, "violations": 11},
+      {"metric": "comet", "spearman": 26.88, "spearman_ci": [24.77, 28.99], "kendall": 19.57, "kendall_ci": [17.98, 21.18], "pairwise_accuracy": 61.10, "violations": 9},
+      {"metric": "cap", "spearman": 60.37, "spearman_ci": [58.56, 62.11], "kendall": 48.83, "kendall_ci": [47.32, 50.35], "pairwise_accuracy": 77.70, "violations": 4}
+    ]
+  },
+  "table4": {
+    "caption": "Pairwise ranking accuracy (×100) on hard neighboring pairs (Table 4).",
+    "pairs": [["equivalent", "partial"], ["overinclusive_valid", "partial"], ["overinclusive_valid", "overinclusive_invalid"], ["alternative_correct", "invalid"]],
+    "rows": [
+      {"metric": "bleu", "values": [36.47, 51.42, 34.80, 36.78]},
+      {"metric": "rouge_l", "values": [23.21, 27.37, 27.74, 35.74]},
+      {"metric": "meteor", "values": [41.31, 70.66, 36.38, 39.86]},
+      {"metric": "bertscore", "values": [51.86, 32.02, 30.88, 57.21]},
+      {"metric": "comet", "values": [47.36, 26.88, 41.61, 61.01]},
+      {"metric": "cap", "values": [59.73, 16.34, 69.48, 73.20]}
+    ]
+  },
+  "llm_outputs": {
+    "caption": "Mean CAP score (×100) on human-labeled answers from three LLMs, by assigned class (Tables 5 and 6).",
+    "models": ["GPT-4o", "Gemini 2.0 Flash", "Qwen3-8B-Instruct"],
+    "violations": [4, 6, 2],
+    "mean_cap": {
+      "exact": [97.27, 91.20, 98.87],
+      "equivalent": [78.81, 70.66, 80.18],
+      "alternative_correct": [31.59, 26.77, 29.65],
+      "overinclusive_valid": [40.32, 44.08, 47.47],
+      "partial": [35.64, 48.87, 46.87],
+      "overinclusive_invalid": [36.58, 38.82, 28.38],
+      "invalid": [25.70, 38.75, 23.26],
+      "contradictory": [18.18, 28.16, 4.53]
+    },
+    "counts": {
+      "exact": [111, 84, 48],
+      "equivalent": [268, 232, 296],
+      "alternative_correct": [235, 102, 242],
+      "overinclusive_valid": [213, 114, 225],
+      "partial": [37, 251, 73],
+      "overinclusive_invalid": [6, 7, 16],
+      "invalid": [123, 206, 91],
+      "contradictory": [6, 3, 8]
+    }
+  },
+  "sweep": {
+    "caption": "CAP hyperparameter sweep on the 1,000-example validation split (Table 12).",
+    "rows": [
+      {"alpha": 0.3, "lambda": 0.0, "spearman": 54.20, "pairwise_accuracy": 74.16, "violations": 4},
+      {"alpha": 0.5, "lambda": 0.0, "spearman": 56.36, "pairwise_accuracy": 75.33, "violations": 4},
+      {"alpha": 0.5, "lambda": 0.3, "spearman": 57.96, "pairwise_accuracy": 76.20, "violations": 4},
+      {"alpha": 0.7, "lambda": 0.3, "spearman": 59.33, "pairwise_accuracy": 76.92, "violations": 4},
+      {"alpha": 0.85, "lambda": 0.3, "spearman": 59.41, "pairwise_accuracy": 76.97, "violations": 4}
+    ]
+  },
+  "human_labels": {
+    "caption": "CAP on the 1,638-example human-validated subset under synthetic vs. human labels (Tables 16 and 17).",
+    "agreement": {"cohen_kappa": 77.9, "linear_kappa": 82.5, "quadratic_kappa": 87.9},
+    "overall": {
+      "synthetic": {"spearman": 66.87, "kendall": 54.69, "pairwise_accuracy": 84.87},
+      "human": {"spearman": 69.89, "kendall": 57.34, "pairwise_accuracy": 87.16}
+    },
+    "mean_cap": {
+      "exact": [98.79, 98.62],
+      "equivalent": [84.59, 86.76],
+      "alternative_correct": [36.74, 31.74],
+      "overinclusive_valid": [50.07, 49.91],
+      "partial": [83.61, 77.98],
+      "overinclusive_invalid": [39.20, 38.46],
+      "invalid": [13.04, 14.56],
+      "contradictory": [3.18, 4.22]
+    }
+  },
+  "statement_model": {
+    "test_bleu": 96.64,
+    "test_rouge_l": 98.08,
+    "test_exact_match": 76.7,
+    "human_validation": {"correct": 90.0, "wrong": 7.5, "semantic": 1.3, "syntactic": 1.2, "n": 1353}
+  },
+  "datasets": {
+    "correctness": {"rows": 8827, "validation": 1000, "test": 7827, "sources": {"ARC-Easy": 4292, "OpenBookQA": 3162, "MMLU": 1373}},
+    "statements": {"rows": 11000, "train": 8800, "validation": 1100, "test": 1100}
+  }
+}

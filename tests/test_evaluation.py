@@ -162,3 +162,14 @@ def test_manifest_detects_changed_input(tmp_path):
     data.write_text("a\n2\n")
     with pytest.raises(ValueError, match="different"):
         check_same_input(manifest, "data", data)
+
+
+def test_floating_point_noise_counts_as_a_tie():
+    df = pd.DataFrame({
+        "label": ["exact", "partial"],
+        "severity": [SEVERITY["exact"], SEVERITY["partial"]],
+        "noisy_tie": [0.49999999999999994, 0.5],
+    })
+    result = evaluate(df, ["noisy_tie"], severity=SEVERITY, hard_pairs=[], n_bootstrap=1)
+    row = result.tables["correlations"].iloc[0]
+    assert (row.pair_wins, row.pair_ties, row.pair_losses) == (0, 1, 0)
