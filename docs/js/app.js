@@ -413,7 +413,7 @@ function renderLeaderboard() {
   ]));
   $("lb-table").replaceChildren(table(["#", "Evaluator", "Spearman ρ", "Kendall τ", "Pairwise acc.", "Hard pairs", "Out of order", "Source"], rows, [0, 2, 3, 4, 5, 6]));
   $("lb-note").textContent = `Test split (${state.results.rows.toLocaleString()} scored examples), ×100. "Hard pairs" is the mean accuracy over the four hard neighbouring pairs. ` +
-    `Reproduced entries come from commit ${state.results.provenance.git_commit.slice(0, 7)}. To add your evaluator, evaluate it below and get in touch.`;
+    "To add your evaluator, evaluate it below and get in touch.";
 }
 
 /* ---------- evaluate yours ---------- */
@@ -629,9 +629,6 @@ async function main() {
     const { spearman, kendall, pairwiseAccuracy, violations, means, classPairs, n } = y.result;
     download("cap-leaderboard-result.json", JSON.stringify({ evaluator: y.name, split: "test", n, spearman, kendall, pairwise_accuracy: pairwiseAccuracy, violations, class_means: means, class_pairs: classPairs }, null, 2), "application/json");
   });
-
-  const p = state.results.provenance;
-  $("provenance").textContent = ` · Results reproduced at commit ${p.git_commit.slice(0, 7)} (${p.created_utc.slice(0, 10)}).`;
 
   // Sections above were built after the browser jumped to the URL's #anchor; jump again.
   if (target) target.scrollIntoView({ behavior: "instant" });

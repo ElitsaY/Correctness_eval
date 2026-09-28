@@ -102,7 +102,6 @@ def main() -> None:
         "rows": manifest["rows"],
         "n_bootstrap": manifest["settings"]["n_bootstrap"],
         "provenance": {
-            "git_commit": manifest["git"]["commit"],
             "created_utc": manifest["created_utc"],
             "packages": {k: v for k, v in manifest["packages"].items() if v},
         },

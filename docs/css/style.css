@@ -250,6 +250,15 @@ table.summary .ci { display: block; font-size: 0.72rem; color: var(--ink-soft); 
 .step h4 { margin: 0 0 0.4rem; font-size: 1rem; display: flex; align-items: center; }
 .step p { font-size: 0.85rem; color: var(--ink-soft); margin: 0 0 0.8rem; }
 
+/* ---- contact: author cards ---- */
+.contact-people { margin-top: 1.4rem; }
+.person-card { min-width: 0; }
+.person-card h3 { margin: 0.1rem 0 0.2rem; font-size: 1.2rem; }
+.person-role { margin: 0; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--teal); }
+.person-affil { margin: 0 0 0.9rem; font-size: 0.85rem; color: var(--ink-soft); }
+.person-links { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.person-links .pill-btn { font-size: 0.8rem; padding: 0.35rem 0.8rem; max-width: 100%; overflow-wrap: anywhere; }
+
 /* ---- contact form (embedded Google Form, kept on a white tile in both themes) ---- */
 .contact-form { margin-top: 1.4rem; }
 .contact-form .form-tile { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; }
